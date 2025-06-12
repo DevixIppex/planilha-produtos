@@ -1,75 +1,184 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Planilha de Produtos</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    button { margin: 10px 5px; padding: 10px 15px; cursor: pointer; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      padding: 2rem;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      color: #343a40;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    }
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    input[type="text"] {
+      padding: 0.75rem;
+      border-radius: 12px;
+      border: 1px solid #ced4da;
+      font-size: 1rem;
+    }
+    button {
+      padding: 0.75rem;
+      font-size: 1rem;
+      background-color: #0d6efd;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #0b5ed7;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+    th, td {
+      border: 1px solid #dee2e6;
+      padding: 0.75rem;
+      text-align: left;
+    }
+    th {
+      background-color: #f1f3f5;
+    }
+    img {
+      max-width: 80px;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
-  <h1>Planilha de Produtos</h1>
-  <button onclick="copiarHTML()">📋 Copiar Planilha</button>
-  <button onclick="baixarHTML()">💾 Baixar Cópia</button>
-  <table id="tabela">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Loja</th>
-        <th>Nome</th>
-        <th>Preço</th>
-        <th>Imagem</th>
-        <th>Link</th>
-      </tr>
-    </thead>
-    <tbody>
-    </tbody>
-  </table>
+  <div class="container">
+    <h1>Planilha de Produtos</h1>
+    <div class="field-group">
+      <input id="product-url" type="text" placeholder="Cole a URL do produto aqui" />
+      <button onclick="adicionarProduto()">Adicionar Produto</button>
+      <button onclick="adicionarVarianteProduto()">Adicionar Variante de Produto</button>
+    </div>
+
+    <table id="tabela-produtos">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Imagem</th>
+          <th>Nome</th>
+          <th>Loja</th>
+          <th>Preço</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
   <script>
-    // Salvar conteúdo HTML para download
-    function baixarHTML() {
-      const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'planilha.html';
-      a.click();
-      URL.revokeObjectURL(url);
+    let idCounter = 1;
+    const tabela = document.querySelector("#tabela-produtos tbody");
+
+    async function adicionarProduto() {
+      const url = document.querySelector("#product-url").value.trim();
+      if (!url) return alert("Cole uma URL válida");
+
+      try {
+        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+        const html = await res.text();
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = html;
+
+        let nome = "", preco = "", imagem = "", loja = "";
+
+        if (url.includes("mercadolivre")) {
+          nome = tempDiv.querySelector(".ui-pdp-title")?.innerText;
+          preco = tempDiv.querySelector("meta[itemprop='price']")?.content;
+          imagem = tempDiv.querySelector(".ui-pdp-image")?.src;
+          loja = "Mercado Livre";
+        } else if (url.includes("shopee")) {
+          nome = tempDiv.querySelector(".vR6K3w")?.innerText;
+          preco = tempDiv.querySelector(".IZPeQz")?.innerText;
+          imagem = tempDiv.querySelector(".uXN1L5")?.src;
+          loja = "Shopee";
+        }
+
+        if (!nome || !preco || !imagem) throw new Error();
+
+        const novaLinha = document.createElement("tr");
+        novaLinha.innerHTML = `
+          <td>${idCounter}</td>
+          <td><img src="${imagem}" /></td>
+          <td>${nome}</td>
+          <td>${loja}</td>
+          <td>${preco}</td>
+          <td><a href="${url}" target="_blank">Ver</a></td>
+        `;
+        tabela.appendChild(novaLinha);
+        idCounter++;
+        document.querySelector("#product-url").value = "";
+      } catch {
+        alert("Não foi possível extrair os dados do produto.");
+      }
     }
 
-    // Copiar conteúdo HTML para área de transferência
-    function copiarHTML() {
-      navigator.clipboard.writeText(document.documentElement.outerHTML).then(() => {
-        alert('Planilha copiada com sucesso!');
-      }).catch(err => {
-        alert('Erro ao copiar: ' + err);
-      });
+    function adicionarVarianteProduto() {
+      const id = prompt("Digite o ID do produto original:");
+      const url = document.querySelector("#product-url").value.trim();
+      if (!id || !url) return alert("Informe o ID e a nova URL");
+
+      const rowOriginal = [...tabela.children].find(r => r.children[0].innerText === id);
+      if (!rowOriginal) return alert("Produto original não encontrado.");
+
+      fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`)
+        .then(res => res.text())
+        .then(html => {
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = html;
+
+          let preco = "", loja = "";
+
+          if (url.includes("mercadolivre")) {
+            preco = tempDiv.querySelector("meta[itemprop='price']")?.content;
+            loja = "Mercado Livre";
+          } else if (url.includes("shopee")) {
+            preco = tempDiv.querySelector(".IZPeQz")?.innerText;
+            loja = "Shopee";
+          }
+
+          if (!preco) return alert("Erro ao obter o preço");
+
+          const novaLinha = document.createElement("tr");
+          novaLinha.innerHTML = `
+            <td>${idCounter}</td>
+            <td>${rowOriginal.children[1].innerHTML}</td>
+            <td>${rowOriginal.children[2].innerText}</td>
+            <td>${loja}</td>
+            <td>${preco}</td>
+            <td><a href="${url}" target="_blank">Ver</a></td>
+          `;
+          tabela.appendChild(novaLinha);
+          idCounter++;
+          document.querySelector("#product-url").value = "";
+        })
+        .catch(() => alert("Erro ao buscar a nova variante."));
     }
-
-    // Recebe os dados do Tampermonkey
-    window.addEventListener('message', (event) => {
-      if (event.origin !== 'https://devixippex.github.io') return;
-      const { id, loja, nome, preco, imagem, url } = event.data;
-      if (!id || !nome || !preco || !imagem || !url || !loja) return;
-
-      const tabela = document.querySelector('#tabela tbody');
-      const linha = document.createElement('tr');
-      linha.innerHTML = `
-        <td>${id}</td>
-        <td>${loja}</td>
-        <td>${nome}</td>
-        <td>${preco}</td>
-        <td><img src="${imagem}" alt="Imagem" width="80"></td>
-        <td><a href="${url}" target="_blank">Ver produto</a></td>
-      `;
-      tabela.appendChild(linha);
-    });
   </script>
 </body>
 </html>
