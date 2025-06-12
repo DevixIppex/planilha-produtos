@@ -1,184 +1,224 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Planilha de Produtos</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f8f9fa;
-      padding: 2rem;
-      margin: 0;
-    }
-    h1 {
-      text-align: center;
-      color: #343a40;
-    }
-    .container {
-      max-width: 1000px;
-      margin: auto;
-      background: white;
-      padding: 2rem;
-      border-radius: 16px;
-      box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
-    }
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    input[type="text"] {
-      padding: 0.75rem;
-      border-radius: 12px;
-      border: 1px solid #ced4da;
-      font-size: 1rem;
-    }
-    button {
-      padding: 0.75rem;
-      font-size: 1rem;
-      background-color: #0d6efd;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background-color: #0b5ed7;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 2rem;
-    }
-    th, td {
-      border: 1px solid #dee2e6;
-      padding: 0.75rem;
-      text-align: left;
-    }
-    th {
-      background-color: #f1f3f5;
-    }
-    img {
-      max-width: 80px;
-      border-radius: 8px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Planilha de Produtos</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #f9f9f9;
+    color: #333;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #0078d7;
+  }
+  #filtros {
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  input[type="text"] {
+    padding: 6px 10px;
+    width: 250px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  button {
+    margin-left: 8px;
+    background-color: #0078d7;
+    border: none;
+    padding: 8px 14px;
+    color: white;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  button:hover {
+    background-color: #005a9e;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  }
+  th, td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+    vertical-align: middle;
+  }
+  th {
+    background-color: #0078d7;
+    color: white;
+    user-select: none;
+  }
+  img {
+    max-width: 80px;
+    max-height: 80px;
+    border-radius: 6px;
+  }
+  .btn-excluir {
+    background-color: #d9534f;
+    padding: 5px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-excluir:hover {
+    background-color: #c9302c;
+  }
+  #msg {
+    margin: 10px auto;
+    text-align: center;
+    color: #0078d7;
+    font-weight: bold;
+    height: 22px;
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>Planilha de Produtos</h1>
-    <div class="field-group">
-      <input id="product-url" type="text" placeholder="Cole a URL do produto aqui" />
-      <button onclick="adicionarProduto()">Adicionar Produto</button>
-      <button onclick="adicionarVarianteProduto()">Adicionar Variante de Produto</button>
-    </div>
 
-    <table id="tabela-produtos">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Imagem</th>
-          <th>Nome</th>
-          <th>Loja</th>
-          <th>Preço</th>
-          <th>Link</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+<h1>Planilha de Produtos</h1>
 
-  <script>
-    let idCounter = 1;
-    const tabela = document.querySelector("#tabela-produtos tbody");
+<div id="filtros">
+  <input type="text" id="filtroTitulo" placeholder="Filtrar por título..." />
+  <button id="btnSalvar">Salvar Planilha</button>
+  <button id="btnLimparFiltro">Limpar Filtro</button>
+</div>
 
-    async function adicionarProduto() {
-      const url = document.querySelector("#product-url").value.trim();
-      if (!url) return alert("Cole uma URL válida");
+<div id="msg"></div>
 
-      try {
-        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
-        const html = await res.text();
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = html;
+<table id="tabelaProdutos">
+  <thead>
+    <tr>
+      <th>Título</th>
+      <th>Imagem</th>
+      <th>Preço (R$)</th>
+      <th>URL</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Produtos vão ser adicionados aqui -->
+  </tbody>
+</table>
 
-        let nome = "", preco = "", imagem = "", loja = "";
+<script>
+// Função para exibir mensagem temporária
+function mostrarMensagem(texto) {
+  const msg = document.getElementById('msg');
+  msg.textContent = texto;
+  setTimeout(() => { msg.textContent = ''; }, 3000);
+}
 
-        if (url.includes("mercadolivre")) {
-          nome = tempDiv.querySelector(".ui-pdp-title")?.innerText;
-          preco = tempDiv.querySelector("meta[itemprop='price']")?.content;
-          imagem = tempDiv.querySelector(".ui-pdp-image")?.src;
-          loja = "Mercado Livre";
-        } else if (url.includes("shopee")) {
-          nome = tempDiv.querySelector(".vR6K3w")?.innerText;
-          preco = tempDiv.querySelector(".IZPeQz")?.innerText;
-          imagem = tempDiv.querySelector(".uXN1L5")?.src;
-          loja = "Shopee";
-        }
+// Função para formatar preço com 2 casas decimais
+function formatarPreco(valor) {
+  const n = parseFloat(valor);
+  if (isNaN(n)) return '';
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
-        if (!nome || !preco || !imagem) throw new Error();
+// Função para criar uma linha na tabela
+function criarLinha(produto) {
+  const tbody = document.querySelector('#tabelaProdutos tbody');
+  const tr = document.createElement('tr');
 
-        const novaLinha = document.createElement("tr");
-        novaLinha.innerHTML = `
-          <td>${idCounter}</td>
-          <td><img src="${imagem}" /></td>
-          <td>${nome}</td>
-          <td>${loja}</td>
-          <td>${preco}</td>
-          <td><a href="${url}" target="_blank">Ver</a></td>
-        `;
-        tabela.appendChild(novaLinha);
-        idCounter++;
-        document.querySelector("#product-url").value = "";
-      } catch {
-        alert("Não foi possível extrair os dados do produto.");
-      }
-    }
+  // Título
+  const tdTitulo = document.createElement('td');
+  tdTitulo.textContent = produto.titulo || '';
+  tr.appendChild(tdTitulo);
 
-    function adicionarVarianteProduto() {
-      const id = prompt("Digite o ID do produto original:");
-      const url = document.querySelector("#product-url").value.trim();
-      if (!id || !url) return alert("Informe o ID e a nova URL");
+  // Imagem
+  const tdImg = document.createElement('td');
+  if (produto.imagem) {
+    const img = document.createElement('img');
+    img.src = produto.imagem;
+    img.alt = produto.titulo || 'Imagem do produto';
+    tdImg.appendChild(img);
+  }
+  tr.appendChild(tdImg);
 
-      const rowOriginal = [...tabela.children].find(r => r.children[0].innerText === id);
-      if (!rowOriginal) return alert("Produto original não encontrado.");
+  // Preço
+  const tdPreco = document.createElement('td');
+  tdPreco.textContent = formatarPreco(produto.preco);
+  tr.appendChild(tdPreco);
 
-      fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`)
-        .then(res => res.text())
-        .then(html => {
-          const tempDiv = document.createElement("div");
-          tempDiv.innerHTML = html;
+  // URL
+  const tdUrl = document.createElement('td');
+  if (produto.url) {
+    const a = document.createElement('a');
+    a.href = produto.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = 'Link';
+    tdUrl.appendChild(a);
+  }
+  tr.appendChild(tdUrl);
 
-          let preco = "", loja = "";
+  // Ações (botão excluir)
+  const tdAcoes = document.createElement('td');
+  const btnExcluir = document.createElement('button');
+  btnExcluir.className = 'btn-excluir';
+  btnExcluir.textContent = 'Excluir';
+  btnExcluir.addEventListener('click', () => {
+    tr.remove();
+    mostrarMensagem('Produto excluído.');
+  });
+  tdAcoes.appendChild(btnExcluir);
+  tr.appendChild(tdAcoes);
 
-          if (url.includes("mercadolivre")) {
-            preco = tempDiv.querySelector("meta[itemprop='price']")?.content;
-            loja = "Mercado Livre";
-          } else if (url.includes("shopee")) {
-            preco = tempDiv.querySelector(".IZPeQz")?.innerText;
-            loja = "Shopee";
-          }
+  tbody.appendChild(tr);
+}
 
-          if (!preco) return alert("Erro ao obter o preço");
+// Listener para receber mensagens do Tampermonkey
+window.addEventListener('message', (event) => {
+  if (event.origin !== 'https://devixippex.github.io') return; // altere para seu domínio do GitHub Pages
+  const msg = event.data;
+  if (msg.acao === 'adicionarProduto' && msg.dados) {
+    criarLinha(msg.dados);
+    mostrarMensagem('Produto adicionado com sucesso!');
+  }
+});
 
-          const novaLinha = document.createElement("tr");
-          novaLinha.innerHTML = `
-            <td>${idCounter}</td>
-            <td>${rowOriginal.children[1].innerHTML}</td>
-            <td>${rowOriginal.children[2].innerText}</td>
-            <td>${loja}</td>
-            <td>${preco}</td>
-            <td><a href="${url}" target="_blank">Ver</a></td>
-          `;
-          tabela.appendChild(novaLinha);
-          idCounter++;
-          document.querySelector("#product-url").value = "";
-        })
-        .catch(() => alert("Erro ao buscar a nova variante."));
-    }
-  </script>
+// Filtro simples por título
+document.getElementById('filtroTitulo').addEventListener('input', function() {
+  const filtro = this.value.toLowerCase();
+  const linhas = document.querySelectorAll('#tabelaProdutos tbody tr');
+  linhas.forEach(linha => {
+    const titulo = linha.cells[0].textContent.toLowerCase();
+    linha.style.display = titulo.includes(filtro) ? '' : 'none';
+  });
+});
+
+// Botão limpar filtro
+document.getElementById('btnLimparFiltro').addEventListener('click', () => {
+  const input = document.getElementById('filtroTitulo');
+  input.value = '';
+  input.dispatchEvent(new Event('input'));
+});
+
+// Botão salvar planilha (gera arquivo HTML com conteúdo atual)
+document.getElementById('btnSalvar').addEventListener('click', () => {
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob([html], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'planilha-produtos.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  mostrarMensagem('Planilha salva localmente.');
+});
+
+</script>
+
 </body>
 </html>
