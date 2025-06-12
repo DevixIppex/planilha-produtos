@@ -1,224 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Planilha de Produtos</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-    background: #f9f9f9;
-    color: #333;
-  }
-  h1 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #0078d7;
-  }
-  #filtros {
-    margin-bottom: 15px;
-    text-align: center;
-  }
-  input[type="text"] {
-    padding: 6px 10px;
-    width: 250px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  button {
-    margin-left: 8px;
-    background-color: #0078d7;
-    border: none;
-    padding: 8px 14px;
-    color: white;
-    font-size: 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  button:hover {
-    background-color: #005a9e;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    box-shadow: 0 0 8px rgba(0,0,0,0.1);
-  }
-  th, td {
-    padding: 12px 10px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-    vertical-align: middle;
-  }
-  th {
-    background-color: #0078d7;
-    color: white;
-    user-select: none;
-  }
-  img {
-    max-width: 80px;
-    max-height: 80px;
-    border-radius: 6px;
-  }
-  .btn-excluir {
-    background-color: #d9534f;
-    padding: 5px 8px;
-    border-radius: 5px;
-    font-size: 12px;
-    color: white;
-    border: none;
-    cursor: pointer;
-  }
-  .btn-excluir:hover {
-    background-color: #c9302c;
-  }
-  #msg {
-    margin: 10px auto;
-    text-align: center;
-    color: #0078d7;
-    font-weight: bold;
-    height: 22px;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Planilha Produtos</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #eee; }
+    img { max-width: 60px; }
+  </style>
 </head>
 <body>
 
-<h1>Planilha de Produtos</h1>
+<h2>Planilha de Produtos</h2>
 
-<div id="filtros">
-  <input type="text" id="filtroTitulo" placeholder="Filtrar por título..." />
-  <button id="btnSalvar">Salvar Planilha</button>
-  <button id="btnLimparFiltro">Limpar Filtro</button>
-</div>
-
-<div id="msg"></div>
-
-<table id="tabelaProdutos">
+<table id="tabela-produtos">
   <thead>
     <tr>
-      <th>Título</th>
-      <th>Imagem</th>
-      <th>Preço (R$)</th>
-      <th>URL</th>
-      <th>Ações</th>
+      <th>ID</th><th>Nome</th><th>Loja</th><th>Preço</th><th>Imagem</th><th>Link</th>
     </tr>
   </thead>
   <tbody>
-    <!-- Produtos vão ser adicionados aqui -->
+    <!-- Produtos vão aparecer aqui -->
   </tbody>
 </table>
 
 <script>
-// Função para exibir mensagem temporária
-function mostrarMensagem(texto) {
-  const msg = document.getElementById('msg');
-  msg.textContent = texto;
-  setTimeout(() => { msg.textContent = ''; }, 3000);
-}
+  // Inicializa array produtos com o que estiver salvo no localStorage, ou vazio
+  let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
 
-// Função para formatar preço com 2 casas decimais
-function formatarPreco(valor) {
-  const n = parseFloat(valor);
-  if (isNaN(n)) return '';
-  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// Função para criar uma linha na tabela
-function criarLinha(produto) {
-  const tbody = document.querySelector('#tabelaProdutos tbody');
-  const tr = document.createElement('tr');
-
-  // Título
-  const tdTitulo = document.createElement('td');
-  tdTitulo.textContent = produto.titulo || '';
-  tr.appendChild(tdTitulo);
-
-  // Imagem
-  const tdImg = document.createElement('td');
-  if (produto.imagem) {
-    const img = document.createElement('img');
-    img.src = produto.imagem;
-    img.alt = produto.titulo || 'Imagem do produto';
-    tdImg.appendChild(img);
+  // Função para adicionar produto no DOM (tabela)
+  function adicionaLinhaTabela(produto) {
+    const tabela = document.querySelector('#tabela-produtos tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${produto.id}</td>
+      <td>${produto.nome}</td>
+      <td>${produto.loja}</td>
+      <td>R$ ${produto.preco}</td>
+      <td><img src="${produto.imagem}" alt="${produto.nome}" /></td>
+      <td><a href="${produto.url}" target="_blank">Link</a></td>
+    `;
+    tabela.appendChild(tr);
   }
-  tr.appendChild(tdImg);
 
-  // Preço
-  const tdPreco = document.createElement('td');
-  tdPreco.textContent = formatarPreco(produto.preco);
-  tr.appendChild(tdPreco);
+  // Mostra os produtos já salvos ao carregar a página
+  produtos.forEach(adicionaLinhaTabela);
 
-  // URL
-  const tdUrl = document.createElement('td');
-  if (produto.url) {
-    const a = document.createElement('a');
-    a.href = produto.url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.textContent = 'Link';
-    tdUrl.appendChild(a);
-  }
-  tr.appendChild(tdUrl);
+  // Escuta mensagens da janela (postMessage)
+  window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://devixippex.github.io') return;
 
-  // Ações (botão excluir)
-  const tdAcoes = document.createElement('td');
-  const btnExcluir = document.createElement('button');
-  btnExcluir.className = 'btn-excluir';
-  btnExcluir.textContent = 'Excluir';
-  btnExcluir.addEventListener('click', () => {
-    tr.remove();
-    mostrarMensagem('Produto excluído.');
+    const produto = event.data;
+
+    if (!produto || !produto.id) return;
+
+    // Verifica se produto já existe
+    const existe = produtos.some(p => p.id === produto.id);
+    if (existe) {
+      alert('Produto já cadastrado.');
+      return;
+    }
+
+    // Adiciona ao array e salva localStorage
+    produtos.push(produto);
+    localStorage.setItem('produtos', JSON.stringify(produtos));
+
+    // Atualiza tabela na tela
+    adicionaLinhaTabela(produto);
+
+    alert('Produto adicionado com sucesso!');
   });
-  tdAcoes.appendChild(btnExcluir);
-  tr.appendChild(tdAcoes);
-
-  tbody.appendChild(tr);
-}
-
-// Listener para receber mensagens do Tampermonkey
-window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://devixippex.github.io') return; // altere para seu domínio do GitHub Pages
-  const msg = event.data;
-  if (msg.acao === 'adicionarProduto' && msg.dados) {
-    criarLinha(msg.dados);
-    mostrarMensagem('Produto adicionado com sucesso!');
-  }
-});
-
-// Filtro simples por título
-document.getElementById('filtroTitulo').addEventListener('input', function() {
-  const filtro = this.value.toLowerCase();
-  const linhas = document.querySelectorAll('#tabelaProdutos tbody tr');
-  linhas.forEach(linha => {
-    const titulo = linha.cells[0].textContent.toLowerCase();
-    linha.style.display = titulo.includes(filtro) ? '' : 'none';
-  });
-});
-
-// Botão limpar filtro
-document.getElementById('btnLimparFiltro').addEventListener('click', () => {
-  const input = document.getElementById('filtroTitulo');
-  input.value = '';
-  input.dispatchEvent(new Event('input'));
-});
-
-// Botão salvar planilha (gera arquivo HTML com conteúdo atual)
-document.getElementById('btnSalvar').addEventListener('click', () => {
-  const html = document.documentElement.outerHTML;
-  const blob = new Blob([html], {type: 'text/html'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'planilha-produtos.html';
-  a.click();
-  URL.revokeObjectURL(url);
-  mostrarMensagem('Planilha salva localmente.');
-});
-
 </script>
 
 </body>
 </html>
+
