@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planilha de Produtos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -12,11 +12,11 @@
           extend: {
             colors: {
               primary: '#4f46e5',
-              secondary: '#ec4899'
-            }
-          }
-        }
-      }
+              secondary: '#ec4899',
+            },
+          },
+        },
+      };
     </script>
   </head>
   <body class="bg-gray-100 font-sans">
@@ -31,9 +31,9 @@
         </div>
       </header>
 
-      <!-- Entrada estilo chat -->
+      <!-- Formulário para adicionar ou editar produto -->
       <div class="mb-6">
-        <h2 class="text-xl font-semibold mb-2">Adicionar Produto Manualmente</h2>
+        <h2 class="text-xl font-semibold mb-2" id="formTitulo">Adicionar Produto Manualmente</h2>
         <form id="chatForm" class="bg-white p-4 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-2 gap-4">
           <input type="text" placeholder="Nome do Produto" id="nome" class="p-2 border rounded" required />
           <input type="text" placeholder="Preço (R$)" id="preco" class="p-2 border rounded" required />
@@ -41,17 +41,38 @@
           <input type="url" placeholder="URL do Produto" id="url" class="p-2 border rounded" required />
           <input type="url" placeholder="URL da Imagem" id="imagem" class="p-2 border rounded" required />
           <input type="number" placeholder="Quantidade" id="quantidade" class="p-2 border rounded" value="1" min="1" required />
-          <button type="submit" class="md:col-span-2 bg-primary text-white py-2 rounded hover:bg-indigo-700 transition-all">Adicionar Produto</button>
+          <button type="submit" class="md:col-span-2 bg-primary text-white py-2 rounded hover:bg-indigo-700 transition-all" id="btnSubmit">Adicionar Produto</button>
+          <button type="button" class="md:col-span-2 bg-gray-400 text-white py-2 rounded hover:bg-gray-600 transition-all hidden" id="btnCancelEdit">Cancelar Edição</button>
+        </form>
+      </div>
+
+      <!-- Adicionar variação manual -->
+      <div class="mb-6">
+        <h2 class="text-xl font-semibold mb-2">Adicionar Variação de Produto Existente</h2>
+        <form id="varForm" class="bg-white p-4 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-3 gap-4">
+          <select id="produtoExistente" class="p-2 border rounded md:col-span-1" required>
+            <option value="">Selecione um produto</option>
+          </select>
+          <input type="text" placeholder="Preço (R$)" id="varPreco" class="p-2 border rounded" required />
+          <input type="url" placeholder="URL da Variação" id="varUrl" class="p-2 border rounded" required />
+          <button type="submit" class="md:col-span-3 bg-secondary text-white py-2 rounded hover:bg-pink-600 transition-all">Adicionar Variação</button>
         </form>
       </div>
 
       <!-- Barra de filtros -->
       <div class="mb-4 flex flex-wrap gap-4 items-center">
-        <input type="text" id="filtroBusca" placeholder="Buscar por nome ou loja..." class="p-2 border rounded w-full md:w-64" />
+        <input
+          type="text"
+          id="filtroBusca"
+          placeholder="Buscar por nome ou loja..."
+          class="p-2 border rounded w-full md:w-64"
+        />
         <select id="filtroLoja" class="p-2 border rounded">
           <option value="">Todas as lojas</option>
         </select>
-        <button onclick="exportarTabela()" class="bg-secondary text-white px-4 py-2 rounded hover:bg-pink-600 transition">Exportar</button>
+        <button onclick="exportarTabela()" class="bg-secondary text-white px-4 py-2 rounded hover:bg-pink-600 transition">
+          Exportar
+        </button>
       </div>
 
       <!-- Tabela -->
@@ -75,21 +96,46 @@
 
     <script>
       let produtos = [];
+      let editIndex = null;
 
-      document.getElementById('chatForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const nome = document.getElementById('nome').value;
-        const preco = parseFloat(document.getElementById('preco').value.replace(',', '.'));
-        const loja = document.getElementById('loja').value;
-        const url = document.getElementById('url').value;
-        const imagem = document.getElementById('imagem').value;
-        const quantidade = parseInt(document.getElementById('quantidade').value);
+      // Atualiza o formulário para adicionar um produto novo
+      function resetForm() {
+        document.getElementById('formTitulo').textContent = 'Adicionar Produto Manualmente';
+        document.getElementById('btnSubmit').textContent = 'Adicionar Produto';
+        document.getElementById('btnCancelEdit').classList.add('hidden');
+        editIndex = null;
+        document.getElementById('chatForm').reset();
+        // habilitar todos os campos
+        ['nome', 'loja', 'imagem'].forEach(id => document.getElementById(id).disabled = false);
+      }
 
-        produtos.push({ nome, preco, loja, url, imagem, quantidade });
+      // Preenche o formulário para edição de produto
+      function editarProduto(index) {
+        editIndex = index;
+        const p = produtos[index];
+        document.getElementById('formTitulo').textContent = `Editando: ${p.nome}`;
+        document.getElementById('nome').value = p.nome;
+        document.getElementById('preco').value = p.preco.toFixed(2);
+        document.getElementById('loja').value = p.loja;
+        document.getElementById('url').value = p.url;
+        document.getElementById('imagem').value = p.imagem;
+        document.getElementById('quantidade').value = p.quantidade;
+        document.getElementById('btnSubmit').textContent = 'Salvar Alterações';
+        document.getElementById('btnCancelEdit').classList.remove('hidden');
+        // Ao editar, bloqueia edição de nome, loja e imagem (não mudam na edição)
+        ['nome', 'loja', 'imagem'].forEach(id => document.getElementById(id).disabled = true);
+      }
+
+      // Remove produto por índice
+      function removerProduto(index) {
+        if (editIndex !== null && editIndex === index) {
+          resetForm();
+        }
+        produtos.splice(index, 1);
         renderizarTabela();
-        e.target.reset();
-      });
+      }
 
+      // Renderiza a tabela de produtos e atualiza dashboard e filtros
       function renderizarTabela() {
         const corpo = document.getElementById('tabelaProdutos');
         corpo.innerHTML = '';
@@ -112,8 +158,13 @@
             <td class="p-3 text-sm">R$ ${produto.preco.toFixed(2)}</td>
             <td class="p-3 text-sm">${produto.quantidade}</td>
             <td class="p-3 text-sm">R$ ${subtotal.toFixed(2)}</td>
-            <td class="p-3 text-sm">
-              <button onclick="removerProduto(${index})" class="text-red-500 hover:text-red-700"><i data-lucide="trash"></i></button>
+            <td class="p-3 text-sm flex gap-2">
+              <button onclick="editarProduto(${index})" title="Editar" class="text-blue-500 hover:text-blue-700">
+                <i data-lucide="edit-2"></i>
+              </button>
+              <button onclick="removerProduto(${index})" title="Remover" class="text-red-500 hover:text-red-700">
+                <i data-lucide="trash"></i>
+              </button>
             </td>
           `;
 
@@ -125,18 +176,41 @@
         document.getElementById('totalLojas').textContent = `Lojas: ${lojas.size}`;
         document.getElementById('ultimaAtualizacao').textContent = `Atualizado: ${new Date().toLocaleString()}`;
 
+        // Atualiza filtro loja
         const filtroLoja = document.getElementById('filtroLoja');
-        const opcoes = Array.from(lojas).map(loja => `<option value="${loja}">${loja}</option>`);
+        const selecionado = filtroLoja.value || '';
+        const opcoes = Array.from(lojas)
+          .sort()
+          .map(loja => `<option value="${loja}" ${loja === selecionado ? 'selected' : ''}>${loja}</option>`);
         filtroLoja.innerHTML = '<option value="">Todas as lojas</option>' + opcoes.join('');
 
+        // Atualiza select de produto existente para variação
+        const produtoExistente = document.getElementById('produtoExistente');
+        const selecionadoProd = produtoExistente.value || '';
+        const optionsProdutos = produtos
+          .map((p, i) => `<option value="${i}" ${i == selecionadoProd ? 'selected' : ''}>${p.nome} (${p.loja})</option>`);
+        produtoExistente.innerHTML = '<option value="">Selecione um produto</option>' + optionsProdutos.join('');
+
         lucide.createIcons();
+
+        aplicarFiltros();
       }
 
-      function removerProduto(index) {
-        produtos.splice(index, 1);
-        renderizarTabela();
+      // Aplica os filtros de busca e loja na tabela
+      function aplicarFiltros() {
+        const termoBusca = document.getElementById('filtroBusca').value.toLowerCase();
+        const filtroLoja = document.getElementById('filtroLoja').value;
+
+        const linhas = document.querySelectorAll('#tabelaProdutos tr');
+        linhas.forEach((tr, idx) => {
+          const p = produtos[idx];
+          const matchBusca = p.nome.toLowerCase().includes(termoBusca) || p.loja.toLowerCase().includes(termoBusca);
+          const matchLoja = filtroLoja === '' || p.loja === filtroLoja;
+          tr.style.display = matchBusca && matchLoja ? '' : 'none';
+        });
       }
 
+      // Exporta a página completa como HTML
       function exportarTabela() {
         const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -147,20 +221,104 @@
         URL.revokeObjectURL(url);
       }
 
-      document.getElementById('filtroBusca').addEventListener('input', (e) => {
-        const termo = e.target.value.toLowerCase();
-        document.querySelectorAll('#tabelaProdutos tr').forEach(tr => {
-          const texto = tr.textContent.toLowerCase();
-          tr.style.display = texto.includes(termo) ? '' : 'none';
-        });
+      // Eventos
+      document.getElementById('chatForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const nome = document.getElementById('nome').value.trim();
+        const preco = parseFloat(document.getElementById('preco').value.replace(',', '.'));
+        const loja = document.getElementById('loja').value.trim();
+        const url = document.getElementById('url').value.trim();
+        const imagem = document.getElementById('imagem').value.trim();
+        const quantidade = parseInt(document.getElementById('quantidade').value);
+
+        if (isNaN(preco) || preco <= 0) {
+          alert('Informe um preço válido.');
+          return;
+        }
+        if (quantidade <= 0) {
+          alert('Informe uma quantidade válida.');
+          return;
+        }
+
+        if (editIndex !== null) {
+          // Salvar edição
+          produtos[editIndex].preco = preco;
+          produtos[editIndex].url = url;
+          produtos[editIndex].quantidade = quantidade;
+          // nome, loja, imagem não mudam na edição
+          resetForm();
+        } else {
+          // Adicionar novo produto
+          produtos.push({ nome, preco, loja, url, imagem, quantidade });
+          document.getElementById('chatForm').reset();
+        }
+        renderizarTabela();
       });
 
-      document.getElementById('filtroLoja').addEventListener('change', (e) => {
-        const loja = e.target.value;
-        document.querySelectorAll('#tabelaProdutos tr').forEach(tr => {
-          const texto = tr.textContent;
-          tr.style.display = loja === '' || texto.includes(loja) ? '' : 'none';
+      document.getElementById('btnCancelEdit').addEventListener('click', (e) => {
+        e.preventDefault();
+        resetForm();
+      });
+
+      // Formulário para adicionar variação
+      document.getElementById('varForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const idxProduto = document.getElementById('produtoExistente').value;
+        const preco = parseFloat(document.getElementById('varPreco').value.replace(',', '.'));
+        const url = document.getElementById('varUrl').value.trim();
+
+        if (idxProduto === '') {
+          alert('Selecione um produto existente.');
+          return;
+        }
+        if (isNaN(preco) || preco <= 0) {
+          alert('Informe um preço válido.');
+          return;
+        }
+        if (!url) {
+          alert('Informe a URL da variação.');
+          return;
+        }
+
+        const prodOriginal = produtos[idxProduto];
+        // Cria variação copiando nome, loja, imagem, mas com preço, url e quantidade=1 novos
+        produtos.push({
+          nome: prodOriginal.nome,
+          preco,
+          loja: prodOriginal.loja,
+          url,
+          imagem: prodOriginal.imagem,
+          quantidade: 1,
         });
+
+        // Limpa formulário
+        document.getElementById('varForm').reset();
+        renderizarTabela();
+      });
+
+      // Filtros
+      document.getElementById('filtroBusca').addEventListener('input', aplicarFiltros);
+      document.getElementById('filtroLoja').addEventListener('change', aplicarFiltros);
+
+      // Inicializa tabela
+      renderizarTabela();
+
+      // -- Espaço para futura integração com plugin Shopee / Mercado Livre --
+      window.addEventListener('message', (event) => {
+        // Espera receber mensagem com produto do plugin
+        // Exemplo:
+        // { type: "novoProduto", data: { nome, preco, loja, url, imagem, quantidade } }
+        if (event.data && event.data.type === 'novoProduto') {
+          const p = event.data.data;
+          // Validação simples
+          if (p.nome && p.preco && p.loja && p.url && p.imagem && p.quantidade) {
+            produtos.push(p);
+            renderizarTabela();
+            alert(`Produto "${p.nome}" adicionado pelo plugin.`);
+          }
+        }
       });
     </script>
   </body>
