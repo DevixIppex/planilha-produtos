@@ -1,297 +1,287 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Planilha Produtos Interativa</title>
+  <title>Planilha de Produtos</title>
+  <!-- Link para o Tailwind CDN (se usar Tailwind) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide/dist/lucide.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/lucide.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-100 text-gray-800">
 
-  <header class="bg-blue-700 text-white p-4 flex justify-between items-center">
-    <h1 class="text-xl font-bold">Planilha de Produtos</h1>
-    <button id="btnExportar" class="bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded flex items-center gap-1">
-      Exportar HTML
-      <i data-lucide="download-cloud" class="w-5 h-5"></i>
-    </button>
-  </header>
+  <div class="container mx-auto p-4">
 
-  <main class="flex-grow container mx-auto p-4 max-w-6xl">
+    <!-- Título e botões -->
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold">Planilha de Produtos</h1>
+      <div class="flex gap-2">
+        <button id="btnAddProduto" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-1">
+          <i data-lucide="plus-circle" class="w-5 h-5"></i> Adicionar Produto
+        </button>
+        <button id="btnAddVariacao" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-1" disabled>
+          <i data-lucide="layers" class="w-5 h-5"></i> Adicionar Variação
+        </button>
+      </div>
+    </div>
 
-    <section class="mb-4 flex flex-wrap gap-4 items-center">
-      <input
-        id="filtroBusca"
-        type="search"
-        placeholder="Buscar por nome, loja ou ID"
-        class="border rounded px-3 py-2 flex-grow min-w-[220px]"
-      />
-      <select id="filtroLoja" class="border rounded px-3 py-2 w-48">
+    <!-- Filtros -->
+    <div class="flex gap-4 mb-4">
+      <input id="filtroBusca" type="text" placeholder="Buscar por nome, id ou loja" class="flex-grow px-3 py-2 border rounded" />
+      <select id="filtroLoja" class="px-3 py-2 border rounded">
         <option value="">Todas as lojas</option>
+        <!-- Opções serão preenchidas dinamicamente -->
       </select>
-      <button id="btnLimparFiltros" class="bg-gray-300 hover:bg-gray-400 px-3 py-2 rounded">Limpar filtros</button>
-      <button id="btnAddProduto" class="ml-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2">
-        <i data-lucide="plus-circle" class="w-5 h-5"></i> Novo Produto
-      </button>
-      <button id="btnAddVariacao" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded flex items-center gap-2" disabled>
-        <i data-lucide="layers" class="w-5 h-5"></i> Nova Variação
-      </button>
-    </section>
+      <button id="btnLimparFiltros" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Limpar Filtros</button>
+    </div>
 
-    <section class="overflow-x-auto bg-white rounded shadow">
-      <table id="tabelaProdutos" class="min-w-full text-left text-sm">
-        <thead class="bg-blue-700 text-white">
+    <!-- Mensagem sem resultados -->
+    <div id="msgSemResultados" class="hidden text-center py-4 text-gray-500 italic">
+      Nenhum produto encontrado.
+    </div>
+
+    <!-- Tabela de produtos -->
+    <div class="overflow-x-auto bg-white rounded shadow">
+      <table class="w-full table-auto border-collapse">
+        <thead class="bg-gray-200 text-left">
           <tr>
-            <th class="px-3 py-2 w-12">ID</th>
-            <th class="px-3 py-2">Nome</th>
-            <th class="px-3 py-2 w-28">Preço (R$)</th>
-            <th class="px-3 py-2 w-24">Quantidade</th>
-            <th class="px-3 py-2 w-28">Loja</th>
-            <th class="px-3 py-2 w-36">Imagem</th>
-            <th class="px-3 py-2 w-48">URL</th>
-            <th class="px-3 py-2 w-40">Ações</th>
+            <th class="px-3 py-2 border">ID</th>
+            <th class="px-3 py-2 border">Nome</th>
+            <th class="px-3 py-2 border">Preço (R$)</th>
+            <th class="px-3 py-2 border">Quantidade</th>
+            <th class="px-3 py-2 border">Loja</th>
+            <th class="px-3 py-2 border">Imagem</th>
+            <th class="px-3 py-2 border">URL</th>
+            <th class="px-3 py-2 border">Ações</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody id="tbodyProdutos">
+          <!-- Linhas geradas dinamicamente -->
+        </tbody>
       </table>
-      <p id="msgSemResultados" class="p-4 text-center text-gray-600 hidden">Nenhum produto encontrado.</p>
-    </section>
+    </div>
 
-    <section class="mt-4 flex gap-6 flex-wrap justify-center text-gray-700 font-semibold text-lg">
+    <!-- Totais -->
+    <div class="mt-4 flex justify-between text-gray-700 font-semibold">
       <div>Total Produtos: <span id="totalProdutos">0</span></div>
       <div>Valor Total: R$ <span id="valorTotal">0,00</span></div>
-      <div>Lojas Distintas: <span id="totalLojas">0</span></div>
-    </section>
+      <div>Total Lojas: <span id="totalLojas">0</span></div>
+    </div>
 
-  </main>
+  </div>
 
-  <!-- Modal -->
-  <div
-    id="modalProduto"
-    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
-  >
-    <div class="bg-white rounded p-6 max-w-lg w-full relative shadow-lg">
-      <button
-        id="btnFecharModal"
-        class="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-        aria-label="Fechar modal"
-      >
-        <i data-lucide="x" class="w-6 h-6"></i>
-      </button>
-
+  <!-- Modal Produto -->
+  <div id="modalProduto" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg max-w-lg w-full p-6 relative shadow-lg">
       <h2 id="tituloModal" class="text-xl font-bold mb-4">Adicionar Produto</h2>
 
       <form id="formProduto" class="space-y-4">
-        <input type="hidden" id="editarId" />
+        <!-- Campo oculto para id -->
+        <input type="hidden" id="inputId" />
 
         <div>
-          <label for="editarNome" class="block font-medium mb-1">Nome</label>
-          <input
-            type="text"
-            id="editarNome"
-            class="w-full border rounded px-3 py-2"
-            required
-          />
+          <label for="inputNome" class="block font-semibold mb-1">Nome</label>
+          <input type="text" id="inputNome" required class="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label for="editarPreco" class="block font-medium mb-1">Preço (R$)</label>
-          <input
-            type="number"
-            id="editarPreco"
-            min="0"
-            step="0.01"
-            class="w-full border rounded px-3 py-2"
-            required
-          />
+          <label for="inputPreco" class="block font-semibold mb-1">Preço (R$)</label>
+          <input type="number" id="inputPreco" step="0.01" min="0" required class="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label for="editarQuantidade" class="block font-medium mb-1">Quantidade</label>
-          <input
-            type="number"
-            id="editarQuantidade"
-            min="1"
-            step="1"
-            class="w-full border rounded px-3 py-2"
-            required
-          />
+          <label for="inputQuantidade" class="block font-semibold mb-1">Quantidade</label>
+          <input type="number" id="inputQuantidade" min="1" required class="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label for="editarLoja" class="block font-medium mb-1">Loja</label>
-          <input
-            type="text"
-            id="editarLoja"
-            class="w-full border rounded px-3 py-2"
-            required
-          />
+          <label for="inputLoja" class="block font-semibold mb-1">Loja</label>
+          <input type="text" id="inputLoja" required class="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label for="editarUrl" class="block font-medium mb-1">URL</label>
-          <input
-            type="url"
-            id="editarUrl"
-            class="w-full border rounded px-3 py-2"
-            required
-          />
+          <label for="inputUrl" class="block font-semibold mb-1">URL</label>
+          <input type="url" id="inputUrl" required class="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label for="editarImagem" class="block font-medium mb-1">Imagem (URL)</label>
-          <input
-            type="url"
-            id="editarImagem"
-            class="w-full border rounded px-3 py-2"
-            required
-          />
+          <label for="inputImagem" class="block font-semibold mb-1">URL da Imagem</label>
+          <input type="url" id="inputImagem" required class="w-full border rounded px-3 py-2" />
         </div>
 
-        <div class="flex justify-end gap-2">
-          <button
-            type="button"
-            id="btnCancelarModal"
-            class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-          >
-            Salvar
-          </button>
+        <div class="flex justify-end gap-2 mt-6">
+          <button type="button" id="btnCancelarModal" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Salvar</button>
         </div>
       </form>
+
+      <button id="btnFecharModal" class="absolute top-3 right-3 text-gray-600 hover:text-gray-900" title="Fechar">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
     </div>
   </div>
 
   <script>
-    // Dados
-    let produtos = [];
-
-    // Para controlar se o modal é edição ou novo produto
-    let modoEdicao = false;
-
-    // Produto selecionado (para variação e edição)
-    let produtoSelecionadoId = null;
-
-    // Elementos
-    const tbody = document.querySelector('#tabelaProdutos tbody');
+    // Variáveis do DOM
+    const tbody = document.getElementById('tbodyProdutos');
     const filtroBusca = document.getElementById('filtroBusca');
     const filtroLoja = document.getElementById('filtroLoja');
-    const msgSemResultados = document.getElementById('msgSemResultados');
     const btnLimparFiltros = document.getElementById('btnLimparFiltros');
     const btnAddProduto = document.getElementById('btnAddProduto');
     const btnAddVariacao = document.getElementById('btnAddVariacao');
-    const btnExportar = document.getElementById('btnExportar');
-
     const modalProduto = document.getElementById('modalProduto');
     const tituloModal = document.getElementById('tituloModal');
     const btnFecharModal = document.getElementById('btnFecharModal');
     const btnCancelarModal = document.getElementById('btnCancelarModal');
     const formProduto = document.getElementById('formProduto');
-
-    const inputId = document.getElementById('editarId');
-    const inputNome = document.getElementById('editarNome');
-    const inputPreco = document.getElementById('editarPreco');
-    const inputQuantidade = document.getElementById('editarQuantidade');
-    const inputLoja = document.getElementById('editarLoja');
-    const inputUrl = document.getElementById('editarUrl');
-    const inputImagem = document.getElementById('editarImagem');
-
-    // Totais
+    const inputId = document.getElementById('inputId');
+    const inputNome = document.getElementById('inputNome');
+    const inputPreco = document.getElementById('inputPreco');
+    const inputQuantidade = document.getElementById('inputQuantidade');
+    const inputLoja = document.getElementById('inputLoja');
+    const inputUrl = document.getElementById('inputUrl');
+    const inputImagem = document.getElementById('inputImagem');
+    const msgSemResultados = document.getElementById('msgSemResultados');
     const totalProdutosElem = document.getElementById('totalProdutos');
     const valorTotalElem = document.getElementById('valorTotal');
     const totalLojasElem = document.getElementById('totalLojas');
 
-    // --- Funções --- //
+    // Estado
+    let produtos = [];
+    let modoEdicao = false;
+    let modoVariacao = false;
+    let produtoSelecionadoId = null;
 
-    // Carregar do localStorage
-    function carregarProdutos() {
-      const json = localStorage.getItem('produtosPlanilha');
-      if (json) {
-        produtos = JSON.parse(json);
-      } else {
-        produtos = [];
-      }
-    }
+    // --- Funções ---
 
-    // Salvar no localStorage
     function salvarProdutos() {
-      localStorage.setItem('produtosPlanilha', JSON.stringify(produtos));
+      localStorage.setItem('produtos', JSON.stringify(produtos));
     }
 
-    // Atualizar filtro lojas
-    function atualizarFiltroLojas() {
-      const lojas = [...new Set(produtos.map(p => p.loja))].sort();
-      filtroLoja.innerHTML = '<option value="">Todas as lojas</option>';
-      lojas.forEach(loja => {
-        const option = document.createElement('option');
-        option.value = loja;
-        option.textContent = loja;
-        filtroLoja.appendChild(option);
-      });
+    function carregarProdutos() {
+      const data = localStorage.getItem('produtos');
+      produtos = data ? JSON.parse(data) : [];
     }
 
-    // Limpar formulário
     function limparFormulario() {
+      formProduto.reset();
       inputId.value = '';
-      inputNome.value = '';
-      inputPreco.value = '';
-      inputQuantidade.value = '1';
-      inputLoja.value = '';
-      inputUrl.value = '';
-      inputImagem.value = '';
+      tituloModal.textContent = 'Adicionar Produto';
     }
 
-    // Abrir modal para novo produto ou edição
-    function abrirModal(editar = false, produto = null) {
-      modoEdicao = editar;
-      if (editar && produto) {
-        tituloModal.textContent = 'Editar Produto';
-        inputId.value = produto.id;
-        inputNome.value = produto.nome;
-        inputPreco.value = produto.preco.toFixed(2);
-        inputQuantidade.value = produto.quantidade;
-        inputLoja.value = produto.loja;
-        inputUrl.value = produto.url;
-        inputImagem.value = produto.imagem;
-      } else {
-        tituloModal.textContent = 'Adicionar Produto';
-        limparFormulario();
-        if (produtoSelecionadoId !== null && !editar) {
-          // Se estiver adicionando variação, preencher nome, loja e imagem baseado no selecionado
-          const original = produtos.find(p => p.id === produtoSelecionadoId);
-          if (original) {
-            inputNome.value = original.nome + ' (variação)';
-            inputLoja.value = original.loja;
-            inputImagem.value = original.imagem;
-          }
-        }
-      }
-      modalProduto.classList.remove('hidden');
-    }
-
-    // Fechar modal
     function fecharModal() {
       modalProduto.classList.add('hidden');
       limparFormulario();
+      modoEdicao = false;
+      modoVariacao = false;
     }
 
-    // Renderizar tabela com filtros combinados
+    function criarLinhaProduto(p) {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b hover:bg-gray-50 cursor-pointer';
+
+      if (p.id === produtoSelecionadoId) {
+        tr.classList.add('bg-blue-100');
+      }
+
+      tr.addEventListener('click', () => {
+        produtoSelecionadoId = p.id;
+        atualizarBotaoVariacao();
+        renderizarTabela();
+      });
+
+      const isVariacao = p.parentId !== undefined && p.parentId !== null;
+
+      const tdId = document.createElement('td');
+      tdId.textContent = p.id;
+      tdId.className = 'px-3 py-2 align-middle ' + (isVariacao ? 'pl-8 italic text-gray-600' : '');
+      tr.appendChild(tdId);
+
+      const tdNome = document.createElement('td');
+      tdNome.textContent = isVariacao ? '↳ ' + p.nome : p.nome;
+      tdNome.className = 'px-3 py-2 align-middle ' + (isVariacao ? 'pl-8 italic text-gray-600' : '');
+      tr.appendChild(tdNome);
+
+      const tdPreco = document.createElement('td');
+      tdPreco.textContent = p.preco.toFixed(2);
+      tdPreco.className = 'px-3 py-2 align-middle';
+      tr.appendChild(tdPreco);
+
+      const tdQuantidade = document.createElement('td');
+      tdQuantidade.textContent = p.quantidade;
+      tdQuantidade.className = 'px-3 py-2 align-middle';
+      tr.appendChild(tdQuantidade);
+
+      const tdLoja = document.createElement('td');
+      tdLoja.textContent = p.loja;
+      tdLoja.className = 'px-3 py-2 align-middle';
+      tr.appendChild(tdLoja);
+
+      const tdImagem = document.createElement('td');
+      const img = document.createElement('img');
+      img.src = p.imagem;
+      img.alt = p.nome;
+      img.className = 'h-10 w-10 object-contain rounded';
+      tdImagem.appendChild(img);
+      tdImagem.className = 'px-3 py-2 align-middle';
+      tr.appendChild(tdImagem);
+
+      const tdUrl = document.createElement('td');
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = 'Link';
+      a.className = 'text-blue-600 hover:underline';
+      tdUrl.appendChild(a);
+      tdUrl.className = 'px-3 py-2 align-middle truncate max-w-xs';
+      tr.appendChild(tdUrl);
+
+      const tdAcoes = document.createElement('td');
+      tdAcoes.className = 'px-3 py-2 align-middle flex gap-2';
+
+      const btnEditar = document.createElement('button');
+      btnEditar.title = 'Editar';
+      btnEditar.className = 'text-blue-600 hover:text-blue-900';
+      btnEditar.innerHTML = '<i data-lucide="edit-2" class="w-5 h-5"></i>';
+      btnEditar.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        produtoSelecionadoId = p.id;
+        modoEdicao = true;
+        modoVariacao = false;
+        abrirModal(true, p);
+        renderizarTabela();
+      });
+      tdAcoes.appendChild(btnEditar);
+
+      const btnExcluir = document.createElement('button');
+      btnExcluir.title = 'Excluir';
+      btnExcluir.className = 'text-red-600 hover:text-red-900';
+      btnExcluir.innerHTML = '<i data-lucide="trash-2" class="w-5 h-5"></i>';
+      btnExcluir.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        if (confirm(`Confirma exclusão do produto ID ${p.id}?`)) {
+          excluirProduto(p.id);
+        }
+      });
+      tdAcoes.appendChild(btnExcluir);
+
+      tr.appendChild(tdAcoes);
+
+      return tr;
+    }
+
     function renderizarTabela() {
       tbody.innerHTML = '';
 
       const termoBusca = filtroBusca.value.trim().toLowerCase();
       const filtroLojaValor = filtroLoja.value;
 
-      // Filtrar produtos pela busca e loja simultaneamente
       const produtosFiltrados = produtos.filter(p => {
         const texto = (p.id + ' ' + p.nome + ' ' + p.loja).toLowerCase();
         const atendeBusca = texto.includes(termoBusca);
-        const atendeLoja = filtroLojaValor === '' || p.loja === filtroLojaValor;
+        const atendeLoja = filtroLojaValor === '' || p.loja.toLowerCase() === filtroLojaValor.toLowerCase();
         return atendeBusca && atendeLoja;
       });
 
@@ -302,106 +292,15 @@
       }
 
       produtosFiltrados.forEach(p => {
-        // Linha produto normal
-        const tr = document.createElement('tr');
-        tr.className = 'border-b hover:bg-gray-50 cursor-pointer';
-
-        // Para destacar variações (tem "parentId" indicando que é variação)
-        const isVariacao = p.parentId !== undefined && p.parentId !== null;
-
-        // Id
-        const tdId = document.createElement('td');
-        tdId.textContent = p.id;
-        tdId.className = 'px-3 py-2 align-middle ' + (isVariacao ? 'pl-8 italic text-gray-600' : '');
-        tr.appendChild(tdId);
-
-        // Nome
-        const tdNome = document.createElement('td');
-        tdNome.textContent = isVariacao ? '↳ ' + p.nome : p.nome;
-        tdNome.className = 'px-3 py-2 align-middle ' + (isVariacao ? 'pl-8 italic text-gray-600' : '');
-        tr.appendChild(tdNome);
-
-        // Preço
-        const tdPreco = document.createElement('td');
-        tdPreco.textContent = p.preco.toFixed(2);
-        tdPreco.className = 'px-3 py-2 align-middle';
-        tr.appendChild(tdPreco);
-
-        // Quantidade
-        const tdQuantidade = document.createElement('td');
-        tdQuantidade.textContent = p.quantidade;
-        tdQuantidade.className = 'px-3 py-2 align-middle';
-        tr.appendChild(tdQuantidade);
-
-        // Loja
-        const tdLoja = document.createElement('td');
-        tdLoja.textContent = p.loja;
-        tdLoja.className = 'px-3 py-2 align-middle';
-        tr.appendChild(tdLoja);
-
-        // Imagem
-        const tdImagem = document.createElement('td');
-        const img = document.createElement('img');
-        img.src = p.imagem;
-        img.alt = p.nome;
-        img.className = 'h-10 w-10 object-contain rounded';
-        tdImagem.appendChild(img);
-        tdImagem.className = 'px-3 py-2 align-middle';
-        tr.appendChild(tdImagem);
-
-        // URL
-        const tdUrl = document.createElement('td');
-        const a = document.createElement('a');
-        a.href = p.url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        a.textContent = 'Link';
-        a.className = 'text-blue-600 hover:underline';
-        tdUrl.appendChild(a);
-        tdUrl.className = 'px-3 py-2 align-middle truncate max-w-xs';
-        tr.appendChild(tdUrl);
-
-        // Ações
-        const tdAcoes = document.createElement('td');
-        tdAcoes.className = 'px-3 py-2 align-middle flex gap-2';
-
-        // Botão Editar
-        const btnEditar = document.createElement('button');
-        btnEditar.title = 'Editar';
-        btnEditar.className = 'text-blue-600 hover:text-blue-900';
-        btnEditar.innerHTML = '<i data-lucide="edit-2" class="w-5 h-5"></i>';
-        btnEditar.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          produtoSelecionadoId = p.id;
-          abrirModal(true, p);
-        });
-        tdAcoes.appendChild(btnEditar);
-
-        // Botão Excluir
-        const btnExcluir = document.createElement('button');
-        btnExcluir.title = 'Excluir';
-        btnExcluir.className = 'text-red-600 hover:text-red-900';
-        btnExcluir.innerHTML = '<i data-lucide="trash-2" class="w-5 h-5"></i>';
-        btnExcluir.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          if (confirm(`Confirma exclusão do produto ID ${p.id}?`)) {
-            excluirProduto(p.id);
-          }
-        });
-        tdAcoes.appendChild(btnExcluir);
-
-        tr.appendChild(tdAcoes);
-
-        tbody.appendChild(tr);
+        tbody.appendChild(criarLinhaProduto(p));
       });
 
       atualizarTotais();
       atualizarFiltroLojas();
-      lucide.replace(); // Atualiza ícones
+      lucide.replace();
       atualizarBotaoVariacao();
     }
 
-    // Atualizar totais
     function atualizarTotais() {
       totalProdutosElem.textContent = produtos.length;
       const valorTotal = produtos.reduce((acc, p) => acc + (p.preco * p.quantidade), 0);
@@ -410,7 +309,17 @@
       totalLojasElem.textContent = lojasUnicas.length;
     }
 
-    // Excluir produto (e variações vinculadas)
+    function atualizarFiltroLojas() {
+      const lojasAtuais = [...new Set(produtos.map(p => p.loja))].sort();
+      filtroLoja.innerHTML = '<option value="">Todas as lojas</option>';
+      lojasAtuais.forEach(loja => {
+        const option = document.createElement('option');
+        option.value = loja;
+        option.textContent = loja;
+        filtroLoja.appendChild(option);
+      });
+    }
+
     function excluirProduto(id) {
       produtos = produtos.filter(p => p.id !== id && p.parentId !== id);
       salvarProdutos();
@@ -418,15 +327,53 @@
       renderizarTabela();
     }
 
-    // Atualizar botão "Adicionar variação"
     function atualizarBotaoVariacao() {
       btnAddVariacao.disabled = produtoSelecionadoId === null;
     }
 
-    // Gerar novo ID incremental
     function gerarNovoId() {
       if (produtos.length === 0) return 1;
       return Math.max(...produtos.map(p => p.id)) + 1;
+    }
+
+    function abrirModal(edicao = false, produto = null) {
+      modoEdicao = edicao;
+      modoVariacao = false;
+
+      limparFormulario();
+
+      if (edicao && produto) {
+        tituloModal.textContent = 'Editar Produto';
+        inputId.value = produto.id;
+        inputNome.value = produto.nome;
+        inputPreco.value = produto.preco;
+        inputQuantidade.value = produto.quantidade;
+        inputLoja.value = produto.loja;
+        inputUrl.value = produto.url;
+        inputImagem.value = produto.imagem;
+      } else {
+        tituloModal.textContent = 'Adicionar Produto';
+      }
+
+      modalProduto.classList.remove('hidden');
+    }
+
+    function abrirModalVariacao() {
+      if (produtoSelecionadoId === null) {
+        alert('Selecione um produto para adicionar variação (clique no produto para selecioná-lo).');
+        return;
+      }
+      modoVariacao = true;
+      modoEdicao = false;
+      limparFormulario();
+      tituloModal.textContent = 'Adicionar Variação';
+
+      const produtoPai = produtos.find(p => p.id === produtoSelecionadoId);
+      if (produtoPai) {
+        inputLoja.value = produtoPai.loja;
+      }
+
+      modalProduto.classList.remove('hidden');
     }
 
     // Eventos modal
@@ -436,9 +383,9 @@
       if (e.target === modalProduto) fecharModal();
     });
 
-    // Submeter formulário modal (adicionar ou editar)
     formProduto.addEventListener('submit', (e) => {
       e.preventDefault();
+
       const id = inputId.value ? Number(inputId.value) : null;
       const nome = inputNome.value.trim();
       const preco = parseFloat(inputPreco.value);
@@ -447,14 +394,12 @@
       const url = inputUrl.value.trim();
       const imagem = inputImagem.value.trim();
 
-      // Validações simples
       if (!nome || isNaN(preco) || preco < 0 || isNaN(quantidade) || quantidade < 1 || !loja || !url || !imagem) {
         alert('Preencha todos os campos corretamente.');
         return;
       }
 
       if (modoEdicao && id !== null) {
-        // Editar produto existente
         const idx = produtos.findIndex(p => p.id === id);
         if (idx !== -1) {
           produtos[idx].nome = nome;
@@ -464,10 +409,23 @@
           produtos[idx].url = url;
           produtos[idx].imagem = imagem;
         }
-      } else {
-        // Novo produto ou variação
+      } else if (modoVariacao) {
+        // Adiciona variação: copia nome da variação, mantém loja do pai, parentId setado
         const novoId = gerarNovoId();
-        let novoProduto = {
+        produtos.push({
+          id: novoId,
+          nome,
+          preco,
+          quantidade,
+          loja,
+          url,
+          imagem,
+          parentId: produtoSelecionadoId
+        });
+      } else {
+        // Novo produto
+        const novoId = gerarNovoId();
+        produtos.push({
           id: novoId,
           nome,
           preco,
@@ -475,14 +433,7 @@
           loja,
           url,
           imagem
-        };
-
-        // Se estiver adicionando variação, define parentId
-        if (produtoSelecionadoId !== null && tituloModal.textContent.includes('Variação')) {
-          novoProduto.parentId = produtoSelecionadoId;
-        }
-
-        produtos.push(novoProduto);
+        });
       }
 
       salvarProdutos();
@@ -490,106 +441,37 @@
       renderizarTabela();
     });
 
-    // Filtrar tabela quando muda busca ou loja
-    filtroBusca.addEventListener('input', renderizarTabela);
-    filtroLoja.addEventListener('change', renderizarTabela);
+    filtroBusca.addEventListener('input', () => {
+      produtoSelecionadoId = null;
+      renderizarTabela();
+    });
+
+    filtroLoja.addEventListener('change', () => {
+      produtoSelecionadoId = null;
+      renderizarTabela();
+    });
+
     btnLimparFiltros.addEventListener('click', () => {
       filtroBusca.value = '';
       filtroLoja.value = '';
-      renderizarTabela();
-    });
-
-    // Botão adicionar produto
-    btnAddProduto.addEventListener('click', () => {
       produtoSelecionadoId = null;
+      renderizarTabela();
+    });
+
+    btnAddProduto.addEventListener('click', () => {
       abrirModal(false);
     });
 
-    // Botão adicionar variação
     btnAddVariacao.addEventListener('click', () => {
-      if (produtoSelecionadoId === null) {
-        alert('Selecione um produto para adicionar variação (clique no botão editar ao lado do produto).');
-        return;
-      }
-      tituloModal.textContent = 'Adicionar Variação';
-      abrirModal(false);
+      abrirModalVariacao();
     });
 
-    // Exportar HTML completo da página (snapshot)
-    btnExportar.addEventListener('click', () => {
-      const htmlCompleto = document.documentElement.outerHTML;
-      const blob = new Blob([htmlCompleto], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'planilha-produtos.html';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
-
-    // Plugin Tampermonkey (exemplo básico de integração)
-    // Adaptações podem ser feitas para seu script específico
-
-    // Função para adicionar produto pelo plugin
-    window.pluginAddProduto = function(dadosProduto) {
-      // Espera um objeto:
-      // { nome, preco, quantidade, loja, url, imagem, parentId? }
-      if (!dadosProduto.nome || !dadosProduto.preco || !dadosProduto.loja || !dadosProduto.url || !dadosProduto.imagem) {
-        console.warn('Dados incompletos para adicionar produto via plugin');
-        return false;
-      }
-
-      const novoId = gerarNovoId();
-      const novoProduto = {
-        id: novoId,
-        nome: dadosProduto.nome,
-        preco: Number(dadosProduto.preco),
-        quantidade: dadosProduto.quantidade ? Number(dadosProduto.quantidade) : 1,
-        loja: dadosProduto.loja,
-        url: dadosProduto.url,
-        imagem: dadosProduto.imagem,
-        parentId: dadosProduto.parentId || null
-      };
-
-      produtos.push(novoProduto);
-      salvarProdutos();
-      renderizarTabela();
-      return true;
-    };
-
-    // Plugin para atualizar variação pelo ID base
-    window.pluginAtualizarVariacao = function(idBase, novaUrl, novoPreco) {
-      // procura produto base e adiciona variação com esses dados
-      const base = produtos.find(p => p.id === idBase);
-      if (!base) {
-        console.warn('Produto base não encontrado para variação');
-        return false;
-      }
-
-      const novoId = gerarNovoId();
-      const novaVariacao = {
-        id: novoId,
-        nome: base.nome + ' (variação)',
-        preco: Number(novoPreco),
-        quantidade: 1,
-        loja: base.loja,
-        url: novaUrl,
-        imagem: base.imagem,
-        parentId: idBase
-      };
-
-      produtos.push(novaVariacao);
-      salvarProdutos();
-      renderizarTabela();
-      return true;
-    };
-
-    // Inicialização
+    // Carregar dados ao iniciar
     carregarProdutos();
     renderizarTabela();
-
+    lucide.replace();
   </script>
+
 </body>
 </html>
+
