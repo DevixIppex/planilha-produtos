@@ -1,168 +1,167 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Planilha de Produtos</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-</head>
-<body class="bg-gray-100 text-gray-900 min-h-screen">
-  <div class="max-w-5xl mx-auto p-4">
-    <header class="mb-6">
-      <h1 class="text-3xl font-bold text-center">📦 Planilha de Produtos</h1>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Planilha de Produtos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#4f46e5',
+              secondary: '#ec4899'
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="max-w-6xl mx-auto py-8 px-4">
+      <header class="mb-6">
+        <h1 class="text-3xl font-bold text-primary mb-2">📦 Planilha de Produtos</h1>
+        <div class="flex gap-4 flex-wrap text-sm text-gray-700">
+          <div id="totalProdutos">Total: 0 produtos</div>
+          <div id="totalValor">Valor total: R$ 0,00</div>
+          <div id="totalLojas">Lojas: 0</div>
+          <div id="ultimaAtualizacao">Atualizado: --</div>
+        </div>
+      </header>
 
-    <!-- Dashboard -->
-    <section class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white p-4 rounded-2xl shadow text-center">
-        <div class="text-gray-500 text-sm">Produtos</div>
-        <div id="totalProdutos" class="text-xl font-bold">0</div>
+      <!-- Entrada estilo chat -->
+      <div class="mb-6">
+        <h2 class="text-xl font-semibold mb-2">Adicionar Produto Manualmente</h2>
+        <form id="chatForm" class="bg-white p-4 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input type="text" placeholder="Nome do Produto" id="nome" class="p-2 border rounded" required />
+          <input type="text" placeholder="Preço (R$)" id="preco" class="p-2 border rounded" required />
+          <input type="text" placeholder="Loja" id="loja" class="p-2 border rounded" required />
+          <input type="url" placeholder="URL do Produto" id="url" class="p-2 border rounded" required />
+          <input type="url" placeholder="URL da Imagem" id="imagem" class="p-2 border rounded" required />
+          <input type="number" placeholder="Quantidade" id="quantidade" class="p-2 border rounded" value="1" min="1" required />
+          <button type="submit" class="md:col-span-2 bg-primary text-white py-2 rounded hover:bg-indigo-700 transition-all">Adicionar Produto</button>
+        </form>
       </div>
-      <div class="bg-white p-4 rounded-2xl shadow text-center">
-        <div class="text-gray-500 text-sm">Valor Total</div>
-        <div id="valorTotal" class="text-xl font-bold">R$ 0,00</div>
-      </div>
-      <div class="bg-white p-4 rounded-2xl shadow text-center">
-        <div class="text-gray-500 text-sm">Lojas</div>
-        <div id="totalLojas" class="text-xl font-bold">0</div>
-      </div>
-      <div class="bg-white p-4 rounded-2xl shadow text-center">
-        <div class="text-gray-500 text-sm">Última Atualização</div>
-        <div id="ultimaAtualizacao" class="text-xl font-bold">-</div>
-      </div>
-    </section>
 
-    <!-- Chat de Entrada Manual -->
-    <section class="bg-white rounded-2xl shadow p-4 mb-6">
-      <h2 class="text-xl font-semibold mb-2">💬 Inserir Produto Manualmente</h2>
-      <div id="chatLog" class="space-y-2 max-h-64 overflow-y-auto text-sm bg-gray-50 p-2 rounded mb-2"></div>
-      <input id="chatInput" type="text" placeholder="Digite aqui..." class="w-full p-2 border rounded focus:outline-none focus:ring" />
-      <button id="enviarChat" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Enviar</button>
-    </section>
+      <!-- Barra de filtros -->
+      <div class="mb-4 flex flex-wrap gap-4 items-center">
+        <input type="text" id="filtroBusca" placeholder="Buscar por nome ou loja..." class="p-2 border rounded w-full md:w-64" />
+        <select id="filtroLoja" class="p-2 border rounded">
+          <option value="">Todas as lojas</option>
+        </select>
+        <button onclick="exportarTabela()" class="bg-secondary text-white px-4 py-2 rounded hover:bg-pink-600 transition">Exportar</button>
+      </div>
 
-    <!-- Lista de Produtos -->
-    <section class="bg-white rounded-2xl shadow p-4">
-      <h2 class="text-xl font-semibold mb-2">🧾 Lista de Produtos</h2>
+      <!-- Tabela -->
       <div class="overflow-x-auto">
-        <table class="min-w-full text-sm text-left">
+        <table class="min-w-full bg-white rounded-lg shadow-md">
           <thead>
-            <tr class="bg-gray-200">
-              <th class="px-3 py-2">Nome</th>
-              <th class="px-3 py-2">Loja</th>
-              <th class="px-3 py-2">Preço</th>
-              <th class="px-3 py-2">Qtd</th>
-              <th class="px-3 py-2">Total</th>
-              <th class="px-3 py-2">Data</th>
+            <tr class="bg-gray-200 text-left text-sm uppercase">
+              <th class="p-3">Imagem</th>
+              <th class="p-3">Produto</th>
+              <th class="p-3">Loja</th>
+              <th class="p-3">Preço</th>
+              <th class="p-3">Qtd</th>
+              <th class="p-3">Total</th>
+              <th class="p-3">Ações</th>
             </tr>
           </thead>
           <tbody id="tabelaProdutos"></tbody>
         </table>
       </div>
-    </section>
-  </div>
+    </div>
 
-  <script>
-    const chatLog = document.getElementById('chatLog');
-    const chatInput = document.getElementById('chatInput');
-    const enviarBtn = document.getElementById('enviarChat');
-    const tabela = document.getElementById('tabelaProdutos');
+    <script>
+      let produtos = [];
 
-    const dashboard = {
-      totalProdutos: document.getElementById('totalProdutos'),
-      valorTotal: document.getElementById('valorTotal'),
-      totalLojas: document.getElementById('totalLojas'),
-      ultimaAtualizacao: document.getElementById('ultimaAtualizacao')
-    };
+      document.getElementById('chatForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nome = document.getElementById('nome').value;
+        const preco = parseFloat(document.getElementById('preco').value.replace(',', '.'));
+        const loja = document.getElementById('loja').value;
+        const url = document.getElementById('url').value;
+        const imagem = document.getElementById('imagem').value;
+        const quantidade = parseInt(document.getElementById('quantidade').value);
 
-    let estadoChat = 0;
-    let entradaAtual = {};
-    const produtos = [];
+        produtos.push({ nome, preco, loja, url, imagem, quantidade });
+        renderizarTabela();
+        e.target.reset();
+      });
 
-    function atualizarDashboard() {
-      dashboard.totalProdutos.textContent = produtos.length;
-      dashboard.valorTotal.textContent = 'R$ ' + produtos.reduce((soma, p) => soma + parseFloat(p.total), 0).toFixed(2);
-      dashboard.totalLojas.textContent = new Set(produtos.map(p => p.loja)).size;
-      dashboard.ultimaAtualizacao.textContent = new Date().toLocaleString();
-    }
+      function renderizarTabela() {
+        const corpo = document.getElementById('tabelaProdutos');
+        corpo.innerHTML = '';
 
-    function adicionarProduto(produto) {
-      produtos.push(produto);
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="px-3 py-1">${produto.nome}</td>
-        <td class="px-3 py-1">${produto.loja}</td>
-        <td class="px-3 py-1">R$ ${produto.preco}</td>
-        <td class="px-3 py-1">${produto.qtd}</td>
-        <td class="px-3 py-1">R$ ${produto.total}</td>
-        <td class="px-3 py-1">${produto.data}</td>
-      `;
-      tabela.appendChild(tr);
-      atualizarDashboard();
-    }
+        const lojas = new Set();
+        let total = 0;
 
-    function adicionarChat(texto, tipo = 'user') {
-      const msg = document.createElement('div');
-      msg.className = tipo === 'user' ? 'text-right text-blue-700' : 'text-left text-gray-800';
-      msg.textContent = texto;
-      chatLog.appendChild(msg);
-      chatLog.scrollTop = chatLog.scrollHeight;
-    }
+        produtos.forEach((produto, index) => {
+          const linha = document.createElement('tr');
+          linha.className = 'border-t';
 
-    function processarChat(input) {
-      adicionarChat(input, 'user');
-      switch (estadoChat) {
-        case 0:
-          entradaAtual.nome = input;
-          adicionarChat('Qual o preço do produto?');
-          estadoChat++;
-          break;
-        case 1:
-          entradaAtual.preco = parseFloat(input.replace(',', '.'));
-          adicionarChat('Qual a loja?');
-          estadoChat++;
-          break;
-        case 2:
-          entradaAtual.loja = input;
-          adicionarChat('Quantidade?');
-          estadoChat++;
-          break;
-        case 3:
-          entradaAtual.qtd = parseInt(input);
-          entradaAtual.total = (entradaAtual.preco * entradaAtual.qtd).toFixed(2);
-          entradaAtual.data = new Date().toLocaleDateString();
-          adicionarProduto(entradaAtual);
-          adicionarChat('Produto adicionado com sucesso! Digite o nome do próximo produto ou deixe em branco.');
-          entradaAtual = {};
-          estadoChat = 0;
-          break;
+          const subtotal = produto.preco * produto.quantidade;
+          total += subtotal;
+          lojas.add(produto.loja);
+
+          linha.innerHTML = `
+            <td class="p-3"><img src="${produto.imagem}" alt="imagem" class="w-16 h-16 object-cover rounded" /></td>
+            <td class="p-3 text-sm"><a href="${produto.url}" target="_blank" class="text-blue-600 hover:underline">${produto.nome}</a></td>
+            <td class="p-3 text-sm">${produto.loja}</td>
+            <td class="p-3 text-sm">R$ ${produto.preco.toFixed(2)}</td>
+            <td class="p-3 text-sm">${produto.quantidade}</td>
+            <td class="p-3 text-sm">R$ ${subtotal.toFixed(2)}</td>
+            <td class="p-3 text-sm">
+              <button onclick="removerProduto(${index})" class="text-red-500 hover:text-red-700"><i data-lucide="trash"></i></button>
+            </td>
+          `;
+
+          corpo.appendChild(linha);
+        });
+
+        document.getElementById('totalProdutos').textContent = `Total: ${produtos.length} produtos`;
+        document.getElementById('totalValor').textContent = `Valor total: R$ ${total.toFixed(2)}`;
+        document.getElementById('totalLojas').textContent = `Lojas: ${lojas.size}`;
+        document.getElementById('ultimaAtualizacao').textContent = `Atualizado: ${new Date().toLocaleString()}`;
+
+        const filtroLoja = document.getElementById('filtroLoja');
+        const opcoes = Array.from(lojas).map(loja => `<option value="${loja}">${loja}</option>`);
+        filtroLoja.innerHTML = '<option value="">Todas as lojas</option>' + opcoes.join('');
+
+        lucide.createIcons();
       }
-    }
 
-    enviarBtn.addEventListener('click', () => {
-      const valor = chatInput.value.trim();
-      if (valor !== '') {
-        processarChat(valor);
-        chatInput.value = '';
+      function removerProduto(index) {
+        produtos.splice(index, 1);
+        renderizarTabela();
       }
-    });
 
-    chatInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') enviarBtn.click();
-    });
-
-    // Escutando mensagens do plugin externo (Tampermonkey)
-    window.addEventListener('message', (event) => {
-      if (event.origin !== 'https://devixippex.github.io') return;
-      const produto = event.data;
-      if (produto.nome && produto.preco && produto.loja) {
-        produto.qtd = 1;
-        produto.total = produto.preco;
-        produto.data = new Date().toLocaleDateString();
-        adicionarProduto(produto);
-        alert('Produto enviado via plugin adicionado!');
+      function exportarTabela() {
+        const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'planilha.html';
+        a.click();
+        URL.revokeObjectURL(url);
       }
-    });
-  </script>
-</body>
+
+      document.getElementById('filtroBusca').addEventListener('input', (e) => {
+        const termo = e.target.value.toLowerCase();
+        document.querySelectorAll('#tabelaProdutos tr').forEach(tr => {
+          const texto = tr.textContent.toLowerCase();
+          tr.style.display = texto.includes(termo) ? '' : 'none';
+        });
+      });
+
+      document.getElementById('filtroLoja').addEventListener('change', (e) => {
+        const loja = e.target.value;
+        document.querySelectorAll('#tabelaProdutos tr').forEach(tr => {
+          const texto = tr.textContent;
+          tr.style.display = loja === '' || texto.includes(loja) ? '' : 'none';
+        });
+      });
+    </script>
+  </body>
 </html>
