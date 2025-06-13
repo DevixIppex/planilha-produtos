@@ -2,78 +2,167 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Planilha Produtos</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #eee; }
-    img { max-width: 60px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planilha de Produtos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
-<body>
+<body class="bg-gray-100 text-gray-900 min-h-screen">
+  <div class="max-w-5xl mx-auto p-4">
+    <header class="mb-6">
+      <h1 class="text-3xl font-bold text-center">📦 Planilha de Produtos</h1>
+    </header>
 
-<h2>Planilha de Produtos</h2>
+    <!-- Dashboard -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-2xl shadow text-center">
+        <div class="text-gray-500 text-sm">Produtos</div>
+        <div id="totalProdutos" class="text-xl font-bold">0</div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl shadow text-center">
+        <div class="text-gray-500 text-sm">Valor Total</div>
+        <div id="valorTotal" class="text-xl font-bold">R$ 0,00</div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl shadow text-center">
+        <div class="text-gray-500 text-sm">Lojas</div>
+        <div id="totalLojas" class="text-xl font-bold">0</div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl shadow text-center">
+        <div class="text-gray-500 text-sm">Última Atualização</div>
+        <div id="ultimaAtualizacao" class="text-xl font-bold">-</div>
+      </div>
+    </section>
 
-<table id="tabela-produtos">
-  <thead>
-    <tr>
-      <th>ID</th><th>Nome</th><th>Loja</th><th>Preço</th><th>Imagem</th><th>Link</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- Produtos vão aparecer aqui -->
-  </tbody>
-</table>
+    <!-- Chat de Entrada Manual -->
+    <section class="bg-white rounded-2xl shadow p-4 mb-6">
+      <h2 class="text-xl font-semibold mb-2">💬 Inserir Produto Manualmente</h2>
+      <div id="chatLog" class="space-y-2 max-h-64 overflow-y-auto text-sm bg-gray-50 p-2 rounded mb-2"></div>
+      <input id="chatInput" type="text" placeholder="Digite aqui..." class="w-full p-2 border rounded focus:outline-none focus:ring" />
+      <button id="enviarChat" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Enviar</button>
+    </section>
 
-<script>
-  // Inicializa array produtos com o que estiver salvo no localStorage, ou vazio
-  let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+    <!-- Lista de Produtos -->
+    <section class="bg-white rounded-2xl shadow p-4">
+      <h2 class="text-xl font-semibold mb-2">🧾 Lista de Produtos</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="px-3 py-2">Nome</th>
+              <th class="px-3 py-2">Loja</th>
+              <th class="px-3 py-2">Preço</th>
+              <th class="px-3 py-2">Qtd</th>
+              <th class="px-3 py-2">Total</th>
+              <th class="px-3 py-2">Data</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaProdutos"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 
-  // Função para adicionar produto no DOM (tabela)
-  function adicionaLinhaTabela(produto) {
-    const tabela = document.querySelector('#tabela-produtos tbody');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${produto.id}</td>
-      <td>${produto.nome}</td>
-      <td>${produto.loja}</td>
-      <td>R$ ${produto.preco}</td>
-      <td><img src="${produto.imagem}" alt="${produto.nome}" /></td>
-      <td><a href="${produto.url}" target="_blank">Link</a></td>
-    `;
-    tabela.appendChild(tr);
-  }
+  <script>
+    const chatLog = document.getElementById('chatLog');
+    const chatInput = document.getElementById('chatInput');
+    const enviarBtn = document.getElementById('enviarChat');
+    const tabela = document.getElementById('tabelaProdutos');
 
-  // Mostra os produtos já salvos ao carregar a página
-  produtos.forEach(adicionaLinhaTabela);
+    const dashboard = {
+      totalProdutos: document.getElementById('totalProdutos'),
+      valorTotal: document.getElementById('valorTotal'),
+      totalLojas: document.getElementById('totalLojas'),
+      ultimaAtualizacao: document.getElementById('ultimaAtualizacao')
+    };
 
-  // Escuta mensagens da janela (postMessage)
-  window.addEventListener('message', (event) => {
-    if (event.origin !== 'https://devixippex.github.io') return;
+    let estadoChat = 0;
+    let entradaAtual = {};
+    const produtos = [];
 
-    const produto = event.data;
-
-    if (!produto || !produto.id) return;
-
-    // Verifica se produto já existe
-    const existe = produtos.some(p => p.id === produto.id);
-    if (existe) {
-      alert('Produto já cadastrado.');
-      return;
+    function atualizarDashboard() {
+      dashboard.totalProdutos.textContent = produtos.length;
+      dashboard.valorTotal.textContent = 'R$ ' + produtos.reduce((soma, p) => soma + parseFloat(p.total), 0).toFixed(2);
+      dashboard.totalLojas.textContent = new Set(produtos.map(p => p.loja)).size;
+      dashboard.ultimaAtualizacao.textContent = new Date().toLocaleString();
     }
 
-    // Adiciona ao array e salva localStorage
-    produtos.push(produto);
-    localStorage.setItem('produtos', JSON.stringify(produtos));
+    function adicionarProduto(produto) {
+      produtos.push(produto);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="px-3 py-1">${produto.nome}</td>
+        <td class="px-3 py-1">${produto.loja}</td>
+        <td class="px-3 py-1">R$ ${produto.preco}</td>
+        <td class="px-3 py-1">${produto.qtd}</td>
+        <td class="px-3 py-1">R$ ${produto.total}</td>
+        <td class="px-3 py-1">${produto.data}</td>
+      `;
+      tabela.appendChild(tr);
+      atualizarDashboard();
+    }
 
-    // Atualiza tabela na tela
-    adicionaLinhaTabela(produto);
+    function adicionarChat(texto, tipo = 'user') {
+      const msg = document.createElement('div');
+      msg.className = tipo === 'user' ? 'text-right text-blue-700' : 'text-left text-gray-800';
+      msg.textContent = texto;
+      chatLog.appendChild(msg);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
 
-    alert('Produto adicionado com sucesso!');
-  });
-</script>
+    function processarChat(input) {
+      adicionarChat(input, 'user');
+      switch (estadoChat) {
+        case 0:
+          entradaAtual.nome = input;
+          adicionarChat('Qual o preço do produto?');
+          estadoChat++;
+          break;
+        case 1:
+          entradaAtual.preco = parseFloat(input.replace(',', '.'));
+          adicionarChat('Qual a loja?');
+          estadoChat++;
+          break;
+        case 2:
+          entradaAtual.loja = input;
+          adicionarChat('Quantidade?');
+          estadoChat++;
+          break;
+        case 3:
+          entradaAtual.qtd = parseInt(input);
+          entradaAtual.total = (entradaAtual.preco * entradaAtual.qtd).toFixed(2);
+          entradaAtual.data = new Date().toLocaleDateString();
+          adicionarProduto(entradaAtual);
+          adicionarChat('Produto adicionado com sucesso! Digite o nome do próximo produto ou deixe em branco.');
+          entradaAtual = {};
+          estadoChat = 0;
+          break;
+      }
+    }
 
+    enviarBtn.addEventListener('click', () => {
+      const valor = chatInput.value.trim();
+      if (valor !== '') {
+        processarChat(valor);
+        chatInput.value = '';
+      }
+    });
+
+    chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') enviarBtn.click();
+    });
+
+    // Escutando mensagens do plugin externo (Tampermonkey)
+    window.addEventListener('message', (event) => {
+      if (event.origin !== 'https://devixippex.github.io') return;
+      const produto = event.data;
+      if (produto.nome && produto.preco && produto.loja) {
+        produto.qtd = 1;
+        produto.total = produto.preco;
+        produto.data = new Date().toLocaleDateString();
+        adicionarProduto(produto);
+        alert('Produto enviado via plugin adicionado!');
+      }
+    });
+  </script>
 </body>
 </html>
-
