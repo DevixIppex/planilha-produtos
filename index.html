@@ -157,16 +157,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ---- FUNÇÕES DE DADOS ----
-    const salvarEstado = () => localStorage.setItem('produtosPlanilhaV2', JSON.stringify(produtos));
+    const salvarEstado = () => {
+        try {
+            localStorage.setItem('produtosPlanilhaV2', JSON.stringify(produtos));
+        } catch (e) {
+            console.error("Erro ao salvar no localStorage:", e);
+            alert("Não foi possível salvar os dados. Seu navegador pode estar com o modo de armazenamento privado ou cheio.");
+        }
+    };
+    
     const carregarEstado = () => {
         const json = localStorage.getItem('produtosPlanilhaV2');
         produtos = json ? JSON.parse(json) : [];
     };
-    const gerarNovoId = () => produtos.length > 0 ? Math.max(...produtos.map(p => p.id)) + 1 : 1;
+    
+    const gerarNovoId = () => produtos.length > 0 ? Math.max(0, ...produtos.map(p => p.id)) + 1 : 1;
     
     // ---- FUNÇÕES DE RENDERIZAÇÃO E UI ----
     const renderizar = () => {
-        DOMElements.tbody.innerHTML = '';
+        const tbody = DOMElements.tbody;
+        tbody.innerHTML = '';
         const termoBusca = DOMElements.filtroBusca.value.trim().toLowerCase();
         const lojaSelecionada = DOMElements.filtroLoja.value;
 
@@ -185,14 +195,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof valB === 'string') valB = valB.toLowerCase();
             if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
             if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
-            return 0;
+            return a.id - b.id; // Critério de desempate
         });
 
         DOMElements.msgSemResultados.classList.toggle('hidden', produtosFiltrados.length > 0);
 
         // 3. Renderizar Linhas
         produtosFiltrados.forEach(p => {
-            const tr = document.createElement('tr');
+            const tr = tbody.insertRow();
             tr.className = 'border-b hover:bg-gray-50 cursor-pointer transition-colors duration-200';
             tr.dataset.id = p.id;
             if (p.id === produtoSelecionadoId) tr.classList.add('selected-row');
@@ -203,9 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.innerHTML = `
                 <td class="px-4 py-2 ${isVariacao ? 'pl-8' : ''}">${p.id}</td>
                 <td class="px-4 py-2 font-medium ${isVariacao ? 'pl-8 text-gray-600' : 'text-gray-800'}">${isVariacao ? '↳ ' : ''}${p.nome}</td>
-                <td class="px-4 py-2">${p.preco.toFixed(2).replace('.', ',')}</td>
+                <td class="px-4 py-2">${p.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                 <td class="px-4 py-2">${p.quantidade}</td>
-                <td class="px-4 py-2 font-semibold">${subtotal.toFixed(2).replace('.', ',')}</td>
+                <td class="px-4 py-2 font-semibold">${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                 <td class="px-4 py-2">${p.loja}</td>
                 <td class="px-4 py-2"><img src="${p.imagem}" alt="${p.nome}" class="h-10 w-10 object-contain rounded" onerror="this.style.display='none'"></td>
                 <td class="px-4 py-2"><a href="${p.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Visitar</a></td>
@@ -216,9 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </td>
             `;
-            DOMElements.tbody.appendChild(tr);
         });
-
+        
         atualizarUI();
     };
     
@@ -228,6 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
         atualizarBotaoVariacao();
         atualizarIndicadoresSort();
         lucide.createIcons();
+        // Correção Crucial: Garante que qualquer mudança que atualize a interface também salve os dados.
+        salvarEstado();
     };
 
     const atualizarTotais = () => {
@@ -252,10 +263,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const atualizarIndicadoresSort = () => {
         DOMElements.tabelaHeader.querySelectorAll('.sortable').forEach(th => {
             const indicator = th.querySelector('.sort-indicator');
-            if (th.dataset.sort === sortConfig.key) {
-                indicator.textContent = sortConfig.order === 'asc' ? '▲' : '▼';
-            } else {
-                indicator.textContent = '';
+            if (indicator) {
+                if (th.dataset.sort === sortConfig.key) {
+                    indicator.textContent = sortConfig.order === 'asc' ? '▲' : '▼';
+                } else {
+                    indicator.textContent = '';
+                }
             }
         });
     };
@@ -264,6 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const abrirModal = (modo, produtoParaEditar = null) => {
         DOMElements.formProduto.reset();
         const { nome, preco, quantidade, loja, url, imagem } = DOMElements.formInputs;
+        [nome, preco, quantidade, loja, url, imagem].forEach(input => input.disabled = false); // Habilita todos por padrão
 
         if (modo === 'novo') {
             DOMElements.tituloModal.textContent = 'Adicionar Novo Produto';
@@ -272,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             DOMElements.tituloModal.textContent = 'Editar Produto';
             DOMElements.formInputs.id.value = produtoParaEditar.id;
             nome.value = produtoParaEditar.nome;
-            preco.value = produtoParaEditar.preco.toFixed(2);
+            preco.value = produtoParaEditar.preco;
             quantidade.value = produtoParaEditar.quantidade;
             loja.value = produtoParaEditar.loja;
             url.value = produtoParaEditar.url;
@@ -283,27 +297,25 @@ document.addEventListener('DOMContentLoaded', () => {
             nome.value = produtoPai.nome;
             imagem.value = produtoPai.imagem;
             quantidade.value = 1;
-            // Bloqueia campos herdados
             [nome, imagem].forEach(input => input.disabled = true);
         }
-
-        if (modo !== 'variacao') [nome, imagem].forEach(input => input.disabled = false);
-
-        DOMElements.modal.classList.remove('hidden', 'opacity-0');
+        DOMElements.modal.classList.remove('hidden');
+        setTimeout(() => DOMElements.modal.classList.remove('opacity-0'), 10);
     };
 
-    const fecharModal = () => DOMElements.modal.classList.add('hidden', 'opacity-0');
+    const fecharModal = () => {
+        DOMElements.modal.classList.add('opacity-0');
+        setTimeout(() => DOMElements.modal.classList.add('hidden'), 300);
+    };
 
     // ---- FUNÇÕES DE EXPORTAÇÃO ----
     const exportarHTML = () => {
         const clonePagina = document.documentElement.cloneNode(true);
-        // Remove elementos interativos e scripts da cópia
         clonePagina.querySelector('script').remove();
         clonePagina.querySelector('#modalProduto').remove();
-        clonePagina.querySelectorAll('button').forEach(btn => {
-            if (btn.id !== 'btnLimparFiltros') btn.remove();
-        });
-        
+        clonePagina.querySelectorAll('.header-actions button').forEach(btn => btn.remove());
+        clonePagina.querySelectorAll('.table-cell-actions').forEach(cell => cell.remove());
+        clonePagina.querySelector('[data-sort="id"]').parentElement.children[8].remove();
         const html = '<!DOCTYPE html>\n' + clonePagina.outerHTML;
         const blob = new Blob([html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -316,11 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const exportarCSV = () => {
         const headers = ['ID', 'ID Pai', 'Nome', 'Preço', 'Quantidade', 'Subtotal', 'Loja', 'URL', 'Imagem'];
-        const rows = produtos.map(p => [
-            p.id, p.parentId || '', `"${p.nome.replace(/"/g, '""')}"`, p.preco, p.quantidade,
-            (p.preco * p.quantidade), `"${p.loja.replace(/"/g, '""')}"`, p.url, p.imagem
-        ]);
-        let csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + '\n' + rows.map(r => r.join(',')).join('\n');
+        const rows = produtos.map(p => {
+            const row = [ p.id, p.parentId || '', `"${p.nome.replace(/"/g, '""')}"`, p.preco, p.quantidade, (p.preco * p.quantidade), `"${p.loja.replace(/"/g, '""')}"`, p.url, p.imagem];
+            return row.join(',');
+        });
+        let csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + '\n' + rows.join('\n');
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
@@ -341,18 +353,17 @@ document.addEventListener('DOMContentLoaded', () => {
     DOMElements.tbody.addEventListener('click', e => {
         const tr = e.target.closest('tr');
         if (!tr) return;
-
         const id = Number(tr.dataset.id);
-        if (e.target.classList.contains('edit-btn')) {
-            const produto = produtos.find(p => p.id === id);
+        const produto = produtos.find(p => p.id === id);
+        if (e.target.closest('.edit-btn')) {
             abrirModal('editar', produto);
-        } else if (e.target.classList.contains('delete-btn')) {
+        } else if (e.target.closest('.delete-btn')) {
             if (confirm(`Confirma exclusão do produto ID ${id} e suas variações?`)) {
                 produtos = produtos.filter(p => p.id !== id && p.parentId !== id);
                 if (produtoSelecionadoId === id) produtoSelecionadoId = null;
                 renderizar();
             }
-        } else { // Selecionar linha
+        } else {
             produtoSelecionadoId = (produtoSelecionadoId === id) ? null : id;
             renderizar();
         }
@@ -371,15 +382,18 @@ document.addEventListener('DOMContentLoaded', () => {
             imagem: DOMElements.formInputs.imagem.value.trim(),
         };
 
-        if (Object.values(dadosForm).some(v => v === '' || v === null) || isNaN(dadosForm.preco) || isNaN(dadosForm.quantidade)) {
-            return alert('Preencha todos os campos corretamente.');
+        if (!dadosForm.nome || isNaN(dadosForm.preco) || !dadosForm.loja || !dadosForm.url || !dadosForm.imagem || isNaN(dadosForm.quantidade)) {
+            return alert('Preencha todos os campos obrigatórios corretamente.');
         }
 
         if (modo.includes('Editar')) {
             const index = produtos.findIndex(p => p.id === id);
-            if (index !== -1) produtos[index] = { ...produtos[index], ...dadosForm };
+            if (index !== -1) {
+                produtos[index] = { ...produtos[index], ...dadosForm };
+            }
         } else if (modo.includes('Variação')) {
-            produtos.push({ ...dadosForm, id: gerarNovoId(), parentId: produtoSelecionadoId });
+            const produtoPai = produtos.find(p=>p.id === produtoSelecionadoId);
+            produtos.push({ ...dadosForm, nome: produtoPai.nome, imagem: produtoPai.imagem, id: gerarNovoId(), parentId: produtoSelecionadoId });
         } else {
             produtos.push({ ...dadosForm, id: gerarNovoId(), parentId: null });
         }
@@ -392,11 +406,13 @@ document.addEventListener('DOMContentLoaded', () => {
     DOMElements.btnAddVariacao.addEventListener('click', () => abrirModal('variacao'));
     DOMElements.btnFecharModal.addEventListener('click', fecharModal);
     DOMElements.btnCancelarModal.addEventListener('click', fecharModal);
+    DOMElements.modal.addEventListener('click', e => { if(e.target === DOMElements.modal) fecharModal(); });
     DOMElements.filtroBusca.addEventListener('input', renderizar);
     DOMElements.filtroLoja.addEventListener('change', renderizar);
     DOMElements.btnLimparFiltros.addEventListener('click', () => {
         DOMElements.filtroBusca.value = '';
         DOMElements.filtroLoja.value = '';
+        sortConfig = { key: 'id', order: 'asc' };
         renderizar();
     });
     DOMElements.btnExportarHTML.addEventListener('click', exportarHTML);
